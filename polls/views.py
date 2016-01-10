@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 from django.views import generic
 from django.utils import timezone
-from .models import Choice, Question
+from .models import Choice, Question, Comment
 
 # Create your views here.
 class IndexView(generic.ListView):
@@ -25,12 +25,10 @@ class DetailView(generic.DetailView):
         """excludes questions that aren't published yet"""
         return Question.objects.filter(pub_date__lte=timezone.now())
 
-  
-
-
 class ResultsView(generic.DetailView):
     model = Question
     template_name = 'polls/results.html'
+    
     
 def vote(request, question_id):
     question = get_object_or_404(Question, pk = question_id)
@@ -50,4 +48,16 @@ def vote(request, question_id):
         # user hits the Back button.
     return HttpResponseRedirect(reverse('polls:results', args=(question.id,)))
     
-    
+def comment(request, question_id):
+    question = get_object_or_404(Question, pk = question_id)
+    try:
+        comment = request.POST['comment']
+        thisComment = Comment(question = question, comment = comment)
+        thisComment.save()
+    except(KeyError, Choice.DoesNotExist):
+        return render(request, 'polls/results.html',{
+            'question': question,
+            'error_message':"Comment failed",
+            })
+            
+    return HttpResponseRedirect(reverse('polls:results', args=(question.id,)))
